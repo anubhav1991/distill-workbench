@@ -1,12 +1,13 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { ArrowLeft, Send, Sparkles, Bot, Loader2, PanelRightOpen, PanelRightClose, MessageSquare } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 
-export default function WorkbenchPage() {
+// --- MAIN CONTENT COMPONENT ---
+function WorkbenchContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const ids = searchParams.get('ids')?.split(',') || []
@@ -29,7 +30,10 @@ export default function WorkbenchPage() {
 
   useEffect(() => {
     const fetchFullTranscripts = async () => {
-      if (ids.length === 0) return
+      if (ids.length === 0) {
+        setLoading(false)
+        return
+      }
       
       const { data: { session } } = await supabase.auth.getSession()
       
@@ -50,7 +54,7 @@ export default function WorkbenchPage() {
       setLoading(false)
     }
     fetchFullTranscripts()
-  }, []) 
+  }, []) // Empty dependency array is fine here
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -322,5 +326,19 @@ export default function WorkbenchPage() {
             </div>
         </div>
     </div>
+  )
+}
+
+// --- DEFAULT EXPORT: WRAP IN SUSPENSE ---
+export default function WorkbenchPage() {
+  return (
+    <Suspense fallback={
+        <div className="flex h-screen items-center justify-center bg-slate-50">
+            <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+            <p className="mt-4 text-slate-600 font-medium">Initializing Workbench...</p>
+        </div>
+    }>
+      <WorkbenchContent />
+    </Suspense>
   )
 }
